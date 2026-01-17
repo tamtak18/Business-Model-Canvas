@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ビジネスモデル・キャンバス</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --canvas-bg: #ffffff;
+            --border-color: #4a7c59;
+            --text-color: #333;
+            --header-bg: #8fb9a8;
+            --section-h2-border: #8fb9a8;
+            --sticky-shadow: rgba(0,0,0,0.15);
+            --color-yellow: #fff740;
+            --color-blue: #7afaff;
+            --color-green: #a7ffeb;
+            --color-pink: #ffc2cd;
+            --color-orange: #ffcc80;
+        }
+
+        /* テーマ設定 */
+        body.theme-gaming { --bg-color: #0b0e14; --canvas-bg: #1a1d23; --border-color: #00ff41; --text-color: #00ff41; --header-bg: #2d333b; --section-h2-border: #00ff41; --sticky-shadow: 0 0 10px #00ff41; }
+        body.theme-gaming-elegance { --bg-color: #050505; --canvas-bg: rgba(20, 20, 25, 0.9); --border-color: #ff9900; --text-color: #ffcc33; --header-bg: #1a1a1a; --section-h2-border: #ff6600; --sticky-shadow: 0 0 15px rgba(255, 153, 0, 0.4); background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%); }
+        body.theme-metallic { --bg-color: #1a1c1e; --canvas-bg: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%); --border-color: #ffffff; --text-color: #ffffff; --header-bg: #34495e; --section-h2-border: #ecf0f1; --sticky-shadow: 4px 4px 10px rgba(0,0,0,0.5); }
+        body.theme-pastoral { --bg-color: #fdf6e3; --canvas-bg: #fffcf5; --border-color: #859900; --text-color: #586e75; --header-bg: #eee8d5; --section-h2-border: #b58900; }
+
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif; margin: 0; padding: 20px; background-color: var(--bg-color); color: var(--text-color); transition: all 0.3s ease; min-height: 100vh; }
+
+        .menu-bar { display: flex; gap: 10px; margin-bottom: 20px; padding: 10px; background: var(--header-bg); border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .menu-bar button, .menu-bar select { padding: 5px 15px; cursor: pointer; border: 1px solid #999; background: #fff; color: #333; font-size: 13px; }
+
+        #canvas-title { text-align: center; font-size: 2.2rem; margin-bottom: 20px; cursor: pointer; width: fit-content; margin-left: auto; margin-right: auto; padding: 5px 20px; font-weight: bold; }
+
+        .canvas-container { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(2, 300px); border: 2px solid var(--border-color); max-width: 1200px; margin: 0 auto; background: var(--canvas-bg); }
+
+        .section { border: 1px solid var(--border-color); padding: 10px; position: relative; overflow-y: auto; display: flex; flex-direction: column; cursor: cell; }
+        .section h2 { font-size: 0.85rem; margin: 0 0 10px 0; border-bottom: 1px solid var(--section-h2-border); padding-bottom: 4px; pointer-events: none; user-select: none; }
+
+        /* レイアウト配置 */
+        .key-partners { grid-row: 1 / 3; grid-column: 1; }
+        .key-activities { grid-row: 1 / 2; grid-column: 2; }
+        .key-resources { grid-row: 2 / 3; grid-column: 2; }
+        .value-propositions { grid-row: 1 / 3; grid-column: 3; }
+        .customer-relationships { grid-row: 1 / 2; grid-column: 4; }
+        .channels { grid-row: 2 / 3; grid-column: 4; }
+        .customer-segments { grid-row: 1 / 3; grid-column: 5; }
+        .cost-structure { grid-row: 3 / 4; grid-column: 1 / 3; height: 150px; }
+        .revenue-streams { grid-row: 3 / 4; grid-column: 3 / 6; height: 150px; }
+
+        .sticky-note-container { display: flex; flex-wrap: wrap; gap: 8px; min-height: 100px; pointer-events: none; }
+        .sticky-note-container * { pointer-events: auto; }
+
+        .sticky-note {
+            width: 85px; height: 85px; padding: 8px; box-shadow: 2px 2px 5px var(--sticky-shadow);
+            position: relative; cursor: grab; word-wrap: break-word; border: none;
+            display: flex; align-items: center; justify-content: center; text-align: center; color: #333;
+            box-sizing: border-box; resize: both; overflow: hidden; min-width: 50px; min-height: 50px;
+            outline: none; user-select: none;
+        }
+        
+        .sticky-note.editing { cursor: text; user-select: text; background-color: #fff !important; box-shadow: 0 0 10px rgba(0,0,0,0.3); z-index: 100; }
+
+        .shape-circle { border-radius: 50%; }
+        .font-serif { font-family: "Hiragino Mincho ProN", serif; }
+        .font-hand { font-family: "Klee One", cursive; }
+
+        #file-input { display: none; }
+
+        #context-menu { position: fixed; display: none; background: white; border: 1px solid #ccc; z-index: 1000; padding: 4px 0; color: #333; box-shadow: 2px 2px 10px rgba(0,0,0,0.2); }
+        .menu-group { border-bottom: 1px solid #eee; padding: 4px 0; }
+        .menu-group-label { font-size: 10px; color: #999; padding: 2px 12px; }
+        .menu-item { padding: 6px 15px; cursor: pointer; font-size: 12px; display: flex; align-items: center; }
+        .menu-item:hover { background-color: #f0f0f0; }
+        .color-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+    </style>
+</head>
+<body class="theme-pastoral">
+
+    <div class="menu-bar">
+        <button onclick="newCanvas()">新規作成</button>
+        <button onclick="document.getElementById('file-input').click()">開く</button>
+        <button onclick="quickSave()">保存</button>
+        <button onclick="downloadCanvas()">名前を付けて保存</button>
+        <select id="theme-select" onchange="changeTheme(this.value)">
+            <option value="theme-pastoral">テーマ：パストラル</option>
+            <option value="theme-gaming">テーマ：ゲーミングPC</option>
+            <option value="theme-gaming-elegance">テーマ：ゲーミングPCエレガンス</option>
+            <option value="theme-metallic">テーマ：金属質</option>
+        </select>
+    </div>
+
+    <input type="file" id="file-input" accept=".json" onchange="loadFromFile(event)">
+
+    <h1 id="canvas-title" ondblclick="editTitleDirect(this)">ビジネスモデル・キャンバス</h1>
+
+    <div class="canvas-container">
+        <div class="section key-partners" data-id="KP"><h2>キーパートナー</h2><div class="sticky-note-container"></div></div>
+        <div class="section key-activities" data-id="KA"><h2>主な活動</h2><div class="sticky-note-container"></div></div>
+        <div class="section key-resources" data-id="KR"><h2>主なリソース</h2><div class="sticky-note-container"></div></div>
+        <div class="section value-propositions" data-id="VP"><h2>価値提案</h2><div class="sticky-note-container"></div></div>
+        <div class="section customer-relationships" data-id="CR"><h2>顧客との関係</h2><div class="sticky-note-container"></div></div>
+        <div class="section channels" data-id="CH"><h2>チャネル</h2><div class="sticky-note-container"></div></div>
+        <div class="section customer-segments" data-id="CS"><h2>顧客セグメント</h2><div class="sticky-note-container"></div></div>
+        <div class="section cost-structure" data-id="C$"><h2>コスト</h2><div class="sticky-note-container"></div></div>
+        <div class="section revenue-streams" data-id="R$"><h2>収入</h2><div class="sticky-note-container"></div></div>
+    </div>
+
+    <div id="context-menu">
+        <div class="menu-group">
+            <div class="menu-group-label">カラー</div>
+            <div class="menu-item" data-action="color" data-value="var(--color-yellow)"><span class="color-dot" style="background:var(--color-yellow)"></span>イエロー</div>
+            <div class="menu-item" data-action="color" data-value="var(--color-blue)"><span class="color-dot" style="background:var(--color-blue)"></span>ブルー</div>
+            <div class="menu-item" data-action="color" data-value="var(--color-green)"><span class="color-dot" style="background:var(--color-green)"></span>グリーン</div>
+            <div class="menu-item" data-action="color" data-value="var(--color-pink)"><span class="color-dot" style="background:var(--color-pink)"></span>ピンク</div>
+            <div class="menu-item" data-action="color" data-value="var(--color-orange)"><span class="color-dot" style="background:var(--color-orange)"></span>オレンジ</div>
+        </div>
+        <div class="menu-group">
+            <div class="menu-group-label">形状</div>
+            <div class="menu-item" data-action="shape" data-value="shape-square">四角</div>
+            <div class="menu-item" data-action="shape" data-value="shape-circle">円形</div>
+        </div>
+        <div class="menu-group">
+            <div class="menu-group-label">フォント</div>
+            <div class="menu-item" data-action="font" data-value="font-sans">ゴシック</div>
+            <div class="menu-item" data-action="font" data-value="font-serif">明朝</div>
+            <div class="menu-item" data-action="font" data-value="font-hand">手書き風</div>
+        </div>
+        <div class="menu-group">
+            <div class="menu-item" onclick="deleteTargetNote()">付箋を削除</div>
+        </div>
+    </div>
+
+    <script>
+        let draggedNote = null;
+        let targetNote = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocal();
+            
+            document.body.addEventListener('dblclick', (e) => {
+                if (e.target.classList.contains('section')) {
+                    createStickyNote(e.target, { text: "新規付箋", color: 'var(--color-yellow)' });
+                    saveToLocal();
+                }
+            });
+
+            document.body.addEventListener('click', () => {
+                document.getElementById('context-menu').style.display = 'none';
+            });
+
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.onclick = () => {
+                    if (!targetNote) return;
+                    const action = item.getAttribute('data-action');
+                    const val = item.getAttribute('data-value');
+                    if (action === 'color') targetNote.style.backgroundColor = val;
+                    if (action === 'shape') { targetNote.classList.remove('shape-circle'); if (val !== 'shape-square') targetNote.classList.add(val); }
+                    if (action === 'font') { targetNote.classList.remove('font-serif', 'font-hand'); if (val !== 'font-sans') targetNote.classList.add(val); }
+                    saveToLocal();
+                };
+            });
+
+            document.querySelectorAll('.section').forEach(section => {
+                section.addEventListener('dragover', (e) => e.preventDefault());
+                section.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (draggedNote) {
+                        section.querySelector('.sticky-note-container').appendChild(draggedNote);
+                        saveToLocal();
+                    }
+                });
+            });
+        });
+
+        function createStickyNote(section, data) {
+            const container = section.querySelector('.sticky-note-container');
+            const note = document.createElement('div');
+            note.className = 'sticky-note';
+            if (data.shape) note.classList.add(data.shape);
+            if (data.font) note.classList.add(data.font);
+            
+            note.innerText = data.text;
+            note.style.backgroundColor = data.color;
+            if (data.width) note.style.width = data.width;
+            if (data.height) note.style.height = data.height;
+            note.draggable = true;
+
+            const resizeObs = new ResizeObserver(() => { if (!draggedNote) saveToLocal(); });
+            resizeObs.observe(note);
+
+            note.onblur = () => {
+                note.contentEditable = "false";
+                note.classList.remove('editing');
+                note.draggable = true;
+                saveToLocal();
+            };
+
+            note.ondblclick = (e) => {
+                e.stopPropagation();
+                note.contentEditable = "true";
+                note.classList.add('editing');
+                note.draggable = false;
+                note.focus();
+            };
+
+            note.oncontextmenu = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                targetNote = note;
+                const menu = document.getElementById('context-menu');
+                menu.style.top = `${e.clientY}px`;
+                menu.style.left = `${e.clientX}px`;
+                menu.style.display = 'block';
+            };
+
+            note.addEventListener('dragstart', (e) => {
+                if (note.classList.contains('editing')) { e.preventDefault(); return; }
+                const rect = note.getBoundingClientRect();
+                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) { e.preventDefault(); return; }
+                draggedNote = note; note.style.opacity = '0.5'; 
+            });
+            note.addEventListener('dragend', () => { draggedNote = null; note.style.opacity = '1'; });
+
+            container.appendChild(note);
+            return note;
+        }
+
+        function deleteTargetNote() {
+            if (targetNote && confirm('付箋を削除しますか．')) {
+                targetNote.remove();
+                saveToLocal();
+            }
+        }
+
+        function editTitleDirect(el) {
+            el.contentEditable = "true";
+            el.focus();
+            el.onblur = () => { el.contentEditable = "false"; saveToLocal(); };
+        }
+
+        function getCanvasData() {
+            const data = { 
+                title: document.getElementById('canvas-title').innerText, 
+                theme: document.body.className, 
+                sections: {} 
+            };
+            document.querySelectorAll('.section').forEach(sec => {
+                data.sections[sec.getAttribute('data-id')] = Array.from(sec.querySelectorAll('.sticky-note')).map(n => ({
+                    text: n.innerText,
+                    color: n.style.backgroundColor,
+                    width: n.style.width, height: n.style.height,
+                    shape: n.classList.contains('shape-circle') ? 'shape-circle' : null,
+                    font: n.classList.contains('font-serif') ? 'font-serif' : (n.classList.contains('font-hand') ? 'font-hand' : null)
+                }));
+            });
+            return data;
+        }
+
+        function saveToLocal() { 
+            localStorage.setItem('bmc_save_v3_data', JSON.stringify(getCanvasData())); 
+        }
+
+        function loadFromLocal() {
+            const saved = localStorage.getItem('bmc_save_v3_data');
+            if (saved) render(JSON.parse(saved));
+        }
+
+        function render(data) {
+            document.getElementById('canvas-title').innerText = data.title;
+            document.body.className = data.theme;
+            document.getElementById('theme-select').value = data.theme || 'theme-pastoral';
+            document.querySelectorAll('.sticky-note').forEach(n => n.remove());
+            for (const [id, notes] of Object.entries(data.sections)) {
+                const sec = document.querySelector(`.section[data-id="${id}"]`);
+                if (sec) notes.forEach(n => createStickyNote(sec, n));
+            }
+        }
+
+        function changeTheme(theme) { 
+            document.body.className = theme; 
+            saveToLocal(); 
+        }
+
+        /* 改修ポイント1: 新規作成時はパストラルで開始 */
+        function newCanvas() { 
+            if (confirm('現在の内容を破棄して新規作成しますか．')) { 
+                document.getElementById('canvas-title').innerText = 'ビジネスモデル・キャンバス';
+                document.querySelectorAll('.sticky-note').forEach(n => n.remove());
+                changeTheme('theme-pastoral'); // パストラルを適用
+                document.getElementById('theme-select').value = 'theme-pastoral';
+                saveToLocal();
+            } 
+        }
+
+        /* 改修ポイント2: 保存（デフォルトのファイル名） */
+        function quickSave() {
+            saveToFile('bmc-export.json');
+        }
+
+        /* 改修ポイント3: 名前を付けて保存（ブラウザのDLダイアログを使用） */
+        function downloadCanvas() {
+            const currentTitle = document.getElementById('canvas-title').innerText.trim();
+            const fileName = (currentTitle || 'business-model-canvas') + '.json';
+            saveToFile(fileName);
+        }
+
+        function saveToFile(fileName) {
+            const dataStr = JSON.stringify(getCanvasData(), null, 2);
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+            saveToLocal();
+        }
+
+        function loadFromFile(event) {
+            const reader = new FileReader();
+            reader.onload = (e) => { render(JSON.parse(e.target.result)); saveToLocal(); };
+            reader.readAsText(event.target.files[0]);
+        }
+    </script>
+</body>
+</html>
